@@ -14,19 +14,19 @@
  * Version: 1.6
  */
 
-;(function($){
+;(function(){
 
 	/**
 	* Set it up as an object under the jQuery namespace
 	*/
-	$.gritter = {};
+	Ext.gritter = {};
 
 	/**
 	* Set up global options that the user can over-ride
 	*/
-	$.gritter.options = {
-		fade_in_speed: 'medium', // how fast notifications fade in
-		fade_out_speed: 1000, // how fast the notices fade out
+	Ext.gritter.options = {
+		fade_in_speed: 1, // how fast notifications fade in
+		fade_out_speed: 1, // how fast the notices fade out
 		time: 6000 // hang on the screen for...
 	}
 
@@ -34,18 +34,18 @@
 	* Add a gritter notification to the screen
 	* @see Gritter#add();
 	*/
-	$.gritter.add = function(params){
+	Ext.gritter.add = function(params){
 
-		try {
+//		try {
 			return Gritter.add(params || {});
-		} catch(e) {
-
-			var err = 'Gritter Error: ' + e;
-			(typeof(console) != 'undefined' && console.error) ?
-				console.error(err, params) :
-				alert(err);
-
-		}
+//		} catch(e) {
+//
+//			var err = 'Gritter Error: ' + e;
+//			(typeof(console) != 'undefined' && console.error) ?
+//				console.error(err, params) :
+//				alert(err);
+//
+//		}
 
 	}
 
@@ -53,7 +53,7 @@
 	* Remove a gritter notification from the screen
 	* @see Gritter#removeSpecific();
 	*/
-	$.gritter.remove = function(id, params){
+	Ext.gritter.remove = function(id, params){
 		Gritter.removeSpecific(id, params || {});
 	}
 
@@ -61,7 +61,7 @@
 	* Remove all notifications
 	* @see Gritter#stop();
 	*/
-	$.gritter.removeAll = function(params){
+	Ext.gritter.removeAll = function(params){
 		Gritter.stop(params || {});
 	}
 
@@ -71,7 +71,7 @@
 	*/
 	var Gritter = {
 
-		// Public - options to over-ride with $.gritter.options in "add"
+		// Public - options to over-ride with Ext.gritter.options in "add"
 		fade_in_speed: '',
 		fade_out_speed: '',
 		time: '',
@@ -116,8 +116,8 @@
 				tmp = this._tpl_item;
 
 			// Assign callbacks
-			$.each(['before_open', 'after_open', 'before_close', 'after_close'], function(i, val){
-				Gritter['_' + val + '_' + number] = ($.isFunction(params[val])) ? params[val] : function(){}
+			Ext.each(['before_open', 'after_open', 'before_close', 'after_close'], function(val){
+				Gritter['_' + val + '_' + number] = (Ext.isFunction(params[val])) ? params[val] : function(){}
 			});
 
 			// Reset
@@ -138,31 +138,31 @@
 			);
 
 			this['_before_open_' + number]();
-			$('#gritter-notice-wrapper').append(tmp);
+			Ext.fly('gritter-notice-wrapper').insertHtml('beforeEnd', tmp);
 
-			var item = $('#gritter-item-' + this._item_count);
+			var item = Ext.get('gritter-item-' + this._item_count);
 
-			item.fadeIn(this.fade_in_speed, function(){
-				Gritter['_after_open_' + number]($(this));
-			});
+			item.fadeIn({duration: this.fade_in_speed, endOpacity: .85, callback: function(){
+				Gritter['_after_open_' + number](Ext.get(this));
+			}});
 
 			if(!sticky){
 				this._setFadeTimer(item, number);
 			}
 
 			// Bind the hover/unhover states
-			$(item).bind('mouseenter mouseleave', function(event){
+			Ext.fly(item).on('mouseenter mouseleave', function(event){
 				if(event.type == 'mouseenter'){
 					if(!sticky){
-						Gritter._restoreItemIfFading($(this), number);
+						Gritter._restoreItemIfFading(Ext.fly(this), number);
 					}
 				}
 				else {
 					if(!sticky){
-						Gritter._setFadeTimer($(this), number);
+						Gritter._setFadeTimer(Ext.fly(this), number);
 					}
 				}
-				Gritter._hoverState($(this), event.type);
+				Gritter._hoverState(Ext.fly(this), event.type);
 			});
 
 			return number;
@@ -182,8 +182,8 @@
 			this['_after_close_' + unique_id](e);
 
 			// Check if the wrapper is empty, if it is.. remove the wrapper
-			if($('.gritter-item-wrapper').length == 0){
-				$('#gritter-notice-wrapper').remove();
+			if(!Ext.fly('.gritter-item-wrapper')){
+				Ext.fly('gritter-notice-wrapper').remove();
 			}
 
 		},
@@ -206,19 +206,24 @@
 
 			// If this is true, then we are coming from clicking the (X)
 			if(unbind_events){
-				e.unbind('mouseenter mouseleave');
+				e.un('mouseenter mouseleave');
 			}
 
 			// Fade it out or remove it
 			if(fade){
+                e.fadeOut({endOpacity: 0, duration: fade_out_speed, callback :function() {
+                        e.setHeight(0, {duration: .3, callback: function() {
+                               Gritter._countRemoveWrapper(unique_id, e);
+                        }});
+                }});
 
-				e.animate({
-					opacity: 0
-				}, fade_out_speed, function(){
-					e.animate({ height: 0 }, 300, function(){
-						Gritter._countRemoveWrapper(unique_id, e);
-					})
-				})
+//				e.animate({
+//					endOpacity: 0
+//				, duration: fade_out_speed, callback: function(){
+//					e.scale(0, 0, {duration: 300, callback: function(){
+//						Gritter._countRemoveWrapper(unique_id, e);
+//					}})
+//				}})
 
 			}
 			else {
@@ -241,19 +246,17 @@
 			if(type == 'mouseenter'){
 
 				e.addClass('hover');
-				var find_img = e.find('img');
+				var find_img = e.select('img');
 
 				// Insert the close button before what element
 				(find_img.length) ?
-					find_img.before(this._tpl_close) :
-					e.find('span').before(this._tpl_close);
+					find_img.insertBefore(this._tpl_close) :
+					e.find('span').insertBefore(this._tpl_close);
 
 				// Clicking (X) makes the perdy thing close
-				e.find('.gritter-close').click(function(){
-
-					var unique_id = e.attr('id').split('-')[2];
+				e.select('.gritter-close').on('click', function(){
+					var unique_id = e.id.split('-')[2];
 					Gritter.removeSpecific(unique_id, {}, e, true);
-
 				});
 
 			}
@@ -261,7 +264,7 @@
 			else {
 
 				e.removeClass('hover');
-				e.find('.gritter-close').remove();
+				e.select('.gritter-close').remove();
 
 			}
 
@@ -277,7 +280,7 @@
 		removeSpecific: function(unique_id, params, e, unbind_events){
 
 			if(!e){
-				var e = $('#gritter-item-' + unique_id);
+				var e = Ext.get('gritter-item-' + unique_id);
 			}
 
 			// We set the fourth param to let the _fade function know to
@@ -295,7 +298,8 @@
 		_restoreItemIfFading: function(e, unique_id){
 
 			clearTimeout(this['_int_id_' + unique_id]);
-			e.stop().css({ opacity: '' });
+			//e.stop().css({opacity: ''});
+            e.stopEvent();
 
 		},
 
@@ -305,8 +309,8 @@
 		*/
 		_runSetup: function(){
 
-			for(opt in $.gritter.options){
-				this[opt] = $.gritter.options[opt];
+			for(opt in Ext.gritter.options){
+				this[opt] = Ext.gritter.options[opt];
 			}
 			this._is_setup = 1;
 
@@ -334,13 +338,13 @@
 		stop: function(params){
 
 			// callbacks (if passed)
-			var before_close = ($.isFunction(params.before_close)) ? params.before_close : function(){};
-			var after_close = ($.isFunction(params.after_close)) ? params.after_close : function(){};
+			var before_close = (Ext.isFunction(params.before_close)) ? params.before_close : function(){};
+			var after_close = (Ext.isFunction(params.after_close)) ? params.after_close : function(){};
 
-			var wrap = $('#gritter-notice-wrapper');
+			var wrap = Ext.get('gritter-notice-wrapper');
 			before_close(wrap);
 			wrap.fadeOut(function(){
-				$(this).remove();
+				Ext.fly(this).remove();
 				after_close();
 			});
 
@@ -395,12 +399,15 @@
 		*/
 		_verifyWrapper: function(){
 
-			if($('#gritter-notice-wrapper').length == 0){
-				$('body').append(this._tpl_wrap);
+			if(!Ext.fly('gritter-notice-wrapper')){
+				//Ext.select('body').append(this._tpl_wrap);
+                //Ext.select('body').appendChild(this._tpl_wrap);
+                //Ext.DomHelper.append(Ext.select('body'), {tag: 'div', id: 'gritter-notice-wrapper'});
+                Ext.DomHelper.append(document.body, {tag: 'div', id: 'gritter-notice-wrapper'});
 			}
 
 		}
 
 	}
 
-})(Ext);
+})();
