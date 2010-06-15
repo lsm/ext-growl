@@ -154,23 +154,29 @@
             if(!sticky){
                 this._setFadeTimer(item, number);
             }
+            var self = this;
 
             // Bind the hover/unhover states
-            Ext.get(item).on({
+            item.on({
                 'mouseenter': function(event){
-                    sticky || Gritter._restoreItemIfFading(item, number);
+                    //item.fadeOut({duration: Gritter.fade_out_speed, endOpacity: 0, remove: true});
+                    if (!sticky) {
+                        clearTimeout(self['_int_id_' + number]);
+                        item.stopFx();
+                        item.show();
+                    }
                     item.addClass('hover');
                     var find_img = item.select('img');
 
                     // Insert the close button before that element
                     (find_img.length) ?
-                    find_img.insertHtml('beforeBegin', Gritter._tpl_close) :
-                    item.select('span').insertHtml('beforeBegin', Gritter._tpl_close);
+                    find_img.insertHtml('beforeBegin', self._tpl_close) :
+                    item.select('span').insertHtml('beforeBegin', self._tpl_close);
 
                     // Clicking (X) makes the perdy thing close
                     item.select('.gritter-close').on('click', function(){
                         var unique_id = item.id.split('-')[2];
-                        Gritter.removeSpecific(unique_id, {}, item, true);
+                        self.removeSpecific(unique_id, {}, item, true);
                     });
                 },
                 'mouseleave': function(event) {
@@ -178,7 +184,7 @@
                     item.removeClass('hover');
                     item.select('.gritter-close').remove();
                 }
-                //,scope: item
+                //,scope: Gritter
             });
 
             return number;
@@ -197,7 +203,7 @@
             e && e.remove();
             this['_after_close_' + unique_id](e);
             // Check if the wrapper is empty, if it is.. remove the wrapper
-            if(Ext.select('div.gritter-item-wrapper') === null){
+            if(Ext.select('div.gritter-item-wrapper').elements.length === 0){
                 Ext.fly('gritter-notice-wrapper').remove();
             }
 
@@ -225,19 +231,24 @@
             }
 
             // Fade it out or remove it
-            // performance of Ext.setHeight is poor, change to use `slideOut' here
+            
             if(fade){
-                e.fadeOut({endOpacity: 0, concurrent: true, duration: fade_out_speed})
-                .slideOut('t', {duration: fade_out_speed, remove: true, callback: function() {
-                       Gritter._countRemoveWrapper(unique_id);
-                }})
+                // callback will be called no matter the effect finished normally or stopped by `stopFx()`
+                // it means effect stopped by `stopFx()' considered 'completed'
+                e.ghost('t', {endOpacity: 0, easing: 'easeNone', duration: fade_out_speed, callback: function() {
+                        // if the effect was stopped by `mouseenter` event (by calling `stopFx()`),
+                        // then the div should be visible as `item.show()` was called after a short time
+                        // (next line, see line 166, 167)
+                        (function(){
+                            if (!e.isVisible()) {
+                                Gritter._countRemoveWrapper(unique_id, e);
+                            }
+                        }).defer(10);
+                }});
             }
             else {
-
                 this._countRemoveWrapper(unique_id, e);
-
             }
-
         },
 
         /**
@@ -256,21 +267,6 @@
             // We set the fourth param to let the _fade function know to
             // unbind the "mouseleave" event.  Once you click (X) there's no going back!
             this._fade(e, unique_id, params || {}, unbind_events);
-
-        },
-
-        /**
-		* If the item is fading out and we hover over it, restore it!
-		* @private
-		* @param {Object} e The HTML element to remove
-		* @param {Integer} unique_id The ID of the element
-		*/
-        _restoreItemIfFading: function(e, unique_id){
-
-            clearTimeout(this['_int_id_' + unique_id]);
-            //e.stop().css({opacity: ''});
-            e.stopFx();
-            e.clearOpacity();
 
         },
 
@@ -294,12 +290,10 @@
 		* @param {Integer} unique_id The ID of the element
 		*/
         _setFadeTimer: function(e, unique_id){
-
             var timer_str = (this._custom_timer) ? this._custom_timer : this.time;
-            this['_int_id_' + unique_id] = setTimeout(function(){
+            this['_int_id_' + unique_id] = (function(){
                 Gritter._fade(e, unique_id);
-            }, timer_str);
-
+            }).defer(timer_str);
         },
 
         /**
