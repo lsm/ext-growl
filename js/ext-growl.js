@@ -18,7 +18,7 @@
 (function(){
 
     /**
-	* Set it up as an object under the jQuery namespace
+	* Set it up as an object under the ExtJs namespace
 	*/
     Ext.gritter = {};
 
@@ -26,7 +26,7 @@
 	* Set up global options that the user can over-ride
 	*/
     Ext.gritter.options = {
-        fade_in_speed: 1, // how fast notifications fade in
+        fade_in_speed: .4, // how fast notifications fade in
         fade_out_speed: 1, // how fast the notices fade out
         time: 6000 // hang on the screen for...
     }
@@ -145,7 +145,7 @@
 
             item.fadeIn({
                 duration: this.fade_in_speed,
-                endOpacity: .85,
+                endOpacity: 1,
                 callback: function(){
                     Gritter['_after_open_' + number](Ext.get(this));
                 }
@@ -189,16 +189,15 @@
 		* If we don't have any more gritter notifications, get rid of the wrapper using this check
 		* @private
 		* @param {Integer} unique_id The ID of the element that was just deleted, use it for a callback
-		* @param {Object} e The jQuery element that we're going to perform the remove() action on
+		* @param {Object} e The ExtJs element that we're going to perform the remove() action on
 		*/
         _countRemoveWrapper: function(unique_id, e){
 
             // Remove it then run the callback function
-            e.remove();
+            e && e.remove();
             this['_after_close_' + unique_id](e);
-
             // Check if the wrapper is empty, if it is.. remove the wrapper
-            if(!Ext.fly('.gritter-item-wrapper')){
+            if(Ext.select('div.gritter-item-wrapper') === null){
                 Ext.fly('gritter-notice-wrapper').remove();
             }
 
@@ -207,7 +206,7 @@
         /**
 		* Fade out an element after it's been on the screen for x amount of time
 		* @private
-		* @param {Object} e The jQuery element to get rid of
+		* @param {Object} e The ExtJs element to get rid of
 		* @param {Integer} unique_id The id of the element to remove
 		* @param {Object} params An optional list of params to set fade speeds etc.
 		* @param {Boolean} unbind_events Unbind the mouseenter/mouseleave events if they click (X)
@@ -215,30 +214,23 @@
         _fade: function(e, unique_id, params, unbind_events){
 
             var params = params || {},
-            fade = (typeof(params.fade) != 'undefined') ? params.fade : true;
+            fade = (typeof(params.fade) != 'undefined') ? params.fade : true,
             fade_out_speed = params.speed || this.fade_out_speed;
 
             this['_before_close_' + unique_id](e);
 
             // If this is true, then we are coming from clicking the (X)
             if(unbind_events){
-                e.un('mouseenter mouseleave');
+                e.removeAllListeners();
             }
 
             // Fade it out or remove it
+            // performance of Ext.setHeight is poor, change to use `slideOut' here
             if(fade){
-                e.fadeOut({
-                    endOpacity: 0,
-                    duration: fade_out_speed,
-                    callback :function() {
-                        e.setHeight(0, {
-                            duration: .3,
-                            callback: function() {
-                                Gritter._countRemoveWrapper(unique_id, e);
-                            }
-                        });
-                    }
-                });
+                e.fadeOut({endOpacity: 0, concurrent: true, duration: fade_out_speed})
+                .slideOut('t', {duration: fade_out_speed, remove: true, callback: function() {
+                       Gritter._countRemoveWrapper(unique_id);
+                }})
             }
             else {
 
@@ -252,7 +244,7 @@
 		* Remove a specific notification based on an ID
 		* @param {Integer} unique_id The ID used to delete a specific notification
 		* @param {Object} params A set of options passed in to determine how to get rid of it
-		* @param {Object} e The jQuery element that we're "fading" then removing
+		* @param {Object} e The ExtJs element that we're "fading" then removing
 		* @param {Boolean} unbind_events If we clicked on the (X) we set this to true to unbind mouseenter/mouseleave
 		*/
         removeSpecific: function(unique_id, params, e, unbind_events){
@@ -278,6 +270,7 @@
             clearTimeout(this['_int_id_' + unique_id]);
             //e.stop().css({opacity: ''});
             e.stopFx();
+            e.clearOpacity();
 
         },
 
@@ -287,7 +280,7 @@
 		*/
         _runSetup: function(){
 
-            for(opt in Ext.gritter.options){
+            for(var opt in Ext.gritter.options){
                 this[opt] = Ext.gritter.options[opt];
             }
             this._is_setup = 1;
@@ -321,11 +314,7 @@
 
             var wrap = Ext.get('gritter-notice-wrapper');
             before_close(wrap);
-            wrap.fadeOut(function(){
-                Ext.fly(this).remove();
-                after_close();
-            });
-
+            wrap.fadeOut({endOpacity: 0, remove: true, callback: after_close});
         },
 
         /**
