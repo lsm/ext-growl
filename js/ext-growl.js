@@ -14,181 +14,197 @@
  * Version: 1.6
  */
 
-;(function(){
+;
+(function(){
 
-	/**
+    /**
 	* Set it up as an object under the jQuery namespace
 	*/
-	Ext.gritter = {};
+    Ext.gritter = {};
 
-	/**
+    /**
 	* Set up global options that the user can over-ride
 	*/
-	Ext.gritter.options = {
-		fade_in_speed: 1, // how fast notifications fade in
-		fade_out_speed: 1, // how fast the notices fade out
-		time: 6000 // hang on the screen for...
-	}
+    Ext.gritter.options = {
+        fade_in_speed: 1, // how fast notifications fade in
+        fade_out_speed: 1, // how fast the notices fade out
+        time: 6000 // hang on the screen for...
+    }
 
-	/**
+    /**
 	* Add a gritter notification to the screen
 	* @see Gritter#add();
 	*/
-	Ext.gritter.add = function(params){
+    Ext.gritter.add = function(params){
 
-//		try {
-			return Gritter.add(params || {});
-//		} catch(e) {
-//
-//			var err = 'Gritter Error: ' + e;
-//			(typeof(console) != 'undefined' && console.error) ?
-//				console.error(err, params) :
-//				alert(err);
-//
-//		}
+        //		try {
+        return Gritter.add(params || {});
+    //		} catch(e) {
+    //
+    //			var err = 'Gritter Error: ' + e;
+    //			(typeof(console) != 'undefined' && console.error) ?
+    //				console.error(err, params) :
+    //				alert(err);
+    //
+    //		}
 
-	}
+    }
 
-	/**
+    /**
 	* Remove a gritter notification from the screen
 	* @see Gritter#removeSpecific();
 	*/
-	Ext.gritter.remove = function(id, params){
-		Gritter.removeSpecific(id, params || {});
-	}
+    Ext.gritter.remove = function(id, params){
+        Gritter.removeSpecific(id, params || {});
+    }
 
-	/**
+    /**
 	* Remove all notifications
 	* @see Gritter#stop();
 	*/
-	Ext.gritter.removeAll = function(params){
-		Gritter.stop(params || {});
-	}
+    Ext.gritter.removeAll = function(params){
+        Gritter.stop(params || {});
+    }
 
-	/**
+    /**
 	* Big fat Gritter object
 	* @constructor (not really since it's object literal)
 	*/
-	var Gritter = {
+    var Gritter = {
 
-		// Public - options to over-ride with Ext.gritter.options in "add"
-		fade_in_speed: '',
-		fade_out_speed: '',
-		time: '',
+        // Public - options to over-ride with Ext.gritter.options in "add"
+        fade_in_speed: '',
+        fade_out_speed: '',
+        time: '',
 
-		// Private - no touchy the private parts
-		_custom_timer: 0,
-		_item_count: 0,
-		_is_setup: 0,
-		_tpl_close: '<div class="gritter-close"></div>',
-		_tpl_item: '<div id="gritter-item-[[number]]" class="gritter-item-wrapper [[item_class]]" style="display:none"><div class="gritter-top"></div><div class="gritter-item">[[image]]<div class="[[class_name]]"><span class="gritter-title">[[username]]</span><p>[[text]]</p></div><div style="clear:both"></div></div><div class="gritter-bottom"></div></div>',
-		_tpl_wrap: '<div id="gritter-notice-wrapper"></div>',
+        // Private - no touchy the private parts
+        _custom_timer: 0,
+        _item_count: 0,
+        _is_setup: 0,
+        _tpl_close: '<div class="gritter-close"></div>',
+        _tpl_item: '<div id="gritter-item-[[number]]" class="gritter-item-wrapper [[item_class]]" style="display:none"><div class="gritter-top"></div><div class="gritter-item">[[image]]<div class="[[class_name]]"><span class="gritter-title">[[username]]</span><p>[[text]]</p></div><div style="clear:both"></div></div><div class="gritter-bottom"></div></div>',
+        _tpl_wrap: '<div id="gritter-notice-wrapper"></div>',
 
-		/**
+        /**
 		* Add a gritter notification to the screen
 		* @param {Object} params The object that contains all the options for drawing the notification
 		* @return {Integer} The specific numeric id to that gritter notification
 		*/
-		add: function(params){
+        add: function(params){
 
-			// We might have some issues if we don't have a title or text!
-			if(!params.title || !params.text){
-				throw 'You need to fill out the first 2 params: "title" and "text"';
-			}
+            // We might have some issues if we don't have a title or text!
+            if(!params.title || !params.text){
+                throw 'You need to fill out the first 2 params: "title" and "text"';
+            }
 
-			// Check the options and set them once
-			if(!this._is_setup){
-				this._runSetup();
-			}
+            // Check the options and set them once
+            if(!this._is_setup){
+                this._runSetup();
+            }
 
-			// Basics
-			var user = params.title,
-				text = params.text,
-				image = params.image || '',
-				sticky = params.sticky || false,
-				item_class = params.class_name || '',
-				time_alive = params.time || '';
+            // Basics
+            var user = params.title,
+            text = params.text,
+            image = params.image || '',
+            sticky = params.sticky || false,
+            item_class = params.class_name || '',
+            time_alive = params.time || '';
 
-			this._verifyWrapper();
+            this._verifyWrapper();
 
-			this._item_count++;
-			var number = this._item_count,
-				tmp = this._tpl_item;
+            this._item_count++;
+            var number = this._item_count,
+            tmp = this._tpl_item;
 
-			// Assign callbacks
-			Ext.each(['before_open', 'after_open', 'before_close', 'after_close'], function(val){
-				Gritter['_' + val + '_' + number] = (Ext.isFunction(params[val])) ? params[val] : function(){}
-			});
+            // Assign callbacks
+            Ext.each(['before_open', 'after_open', 'before_close', 'after_close'], function(val){
+                Gritter['_' + val + '_' + number] = (Ext.isFunction(params[val])) ? params[val] : function(){}
+            });
 
-			// Reset
-			this._custom_timer = 0;
+            // Reset
+            this._custom_timer = 0;
 
-			// A custom fade time set
-			if(time_alive){
-				this._custom_timer = time_alive;
-			}
+            // A custom fade time set
+            if(time_alive){
+                this._custom_timer = time_alive;
+            }
 
-			var image_str = (image != '') ? '<img src="' + image + '" class="gritter-image" />' : '',
-				class_name = (image != '') ? 'gritter-with-image' : 'gritter-without-image';
+            var image_str = (image != '') ? '<img src="' + image + '" class="gritter-image" />' : '',
+            class_name = (image != '') ? 'gritter-with-image' : 'gritter-without-image';
 
-			// String replacements on the template
-			tmp = this._str_replace(
-				['[[username]]', '[[text]]', '[[image]]', '[[number]]', '[[class_name]]', '[[item_class]]'],
-				[user, text, image_str, this._item_count, class_name, item_class], tmp
-			);
+            // String replacements on the template
+            tmp = this._str_replace(
+                ['[[username]]', '[[text]]', '[[image]]', '[[number]]', '[[class_name]]', '[[item_class]]'],
+                [user, text, image_str, this._item_count, class_name, item_class], tmp
+                );
 
-			this['_before_open_' + number]();
-			Ext.fly('gritter-notice-wrapper').insertHtml('beforeEnd', tmp);
+            this['_before_open_' + number]();
+            Ext.fly('gritter-notice-wrapper').insertHtml('beforeEnd', tmp);
 
-			var item = Ext.get('gritter-item-' + this._item_count);
+            var item = Ext.get('gritter-item-' + this._item_count);
 
-			item.fadeIn({duration: this.fade_in_speed, endOpacity: .85, callback: function(){
-				Gritter['_after_open_' + number](Ext.get(this));
-			}});
+            item.fadeIn({
+                duration: this.fade_in_speed,
+                endOpacity: .85,
+                callback: function(){
+                    Gritter['_after_open_' + number](Ext.get(this));
+                }
+            });
 
-			if(!sticky){
-				this._setFadeTimer(item, number);
-			}
+            if(!sticky){
+                this._setFadeTimer(item, number);
+            }
 
-			// Bind the hover/unhover states
-			Ext.fly(item).on('mouseenter mouseleave', function(event){
-				if(event.type == 'mouseenter'){
-					if(!sticky){
-						Gritter._restoreItemIfFading(Ext.fly(this), number);
-					}
-				}
-				else {
-					if(!sticky){
-						Gritter._setFadeTimer(Ext.fly(this), number);
-					}
-				}
-				Gritter._hoverState(Ext.fly(this), event.type);
-			});
+            // Bind the hover/unhover states
+            Ext.get(item).on({
+                'mouseenter': function(event){
+                    sticky || Gritter._restoreItemIfFading(item, number);
+                    item.addClass('hover');
+                    var find_img = item.select('img');
 
-			return number;
+                    // Insert the close button before that element
+                    (find_img.length) ?
+                    find_img.insertHtml('beforeBegin', Gritter._tpl_close) :
+                    item.select('span').insertHtml('beforeBegin', Gritter._tpl_close);
 
-		},
+                    // Clicking (X) makes the perdy thing close
+                    item.select('.gritter-close').on('click', function(){
+                        var unique_id = item.id.split('-')[2];
+                        Gritter.removeSpecific(unique_id, {}, item, true);
+                    });
+                },
+                'mouseleave': function(event) {
+                    sticky || Gritter._setFadeTimer(item, number);
+                    item.removeClass('hover');
+                    item.select('.gritter-close').remove();
+                }
+                //,scope: item
+            });
 
-		/**
+            return number;
+
+        },
+
+        /**
 		* If we don't have any more gritter notifications, get rid of the wrapper using this check
 		* @private
 		* @param {Integer} unique_id The ID of the element that was just deleted, use it for a callback
 		* @param {Object} e The jQuery element that we're going to perform the remove() action on
 		*/
-		_countRemoveWrapper: function(unique_id, e){
+        _countRemoveWrapper: function(unique_id, e){
 
-			// Remove it then run the callback function
-			e.remove();
-			this['_after_close_' + unique_id](e);
+            // Remove it then run the callback function
+            e.remove();
+            this['_after_close_' + unique_id](e);
 
-			// Check if the wrapper is empty, if it is.. remove the wrapper
-			if(!Ext.fly('.gritter-item-wrapper')){
-				Ext.fly('gritter-notice-wrapper').remove();
-			}
+            // Check if the wrapper is empty, if it is.. remove the wrapper
+            if(!Ext.fly('.gritter-item-wrapper')){
+                Ext.fly('gritter-notice-wrapper').remove();
+            }
 
-		},
+        },
 
-		/**
+        /**
 		* Fade out an element after it's been on the screen for x amount of time
 		* @private
 		* @param {Object} e The jQuery element to get rid of
@@ -196,218 +212,178 @@
 		* @param {Object} params An optional list of params to set fade speeds etc.
 		* @param {Boolean} unbind_events Unbind the mouseenter/mouseleave events if they click (X)
 		*/
-		_fade: function(e, unique_id, params, unbind_events){
+        _fade: function(e, unique_id, params, unbind_events){
 
-			var params = params || {},
-				fade = (typeof(params.fade) != 'undefined') ? params.fade : true;
-				fade_out_speed = params.speed || this.fade_out_speed;
+            var params = params || {},
+            fade = (typeof(params.fade) != 'undefined') ? params.fade : true;
+            fade_out_speed = params.speed || this.fade_out_speed;
 
-			this['_before_close_' + unique_id](e);
+            this['_before_close_' + unique_id](e);
 
-			// If this is true, then we are coming from clicking the (X)
-			if(unbind_events){
-				e.un('mouseenter mouseleave');
-			}
+            // If this is true, then we are coming from clicking the (X)
+            if(unbind_events){
+                e.un('mouseenter mouseleave');
+            }
 
-			// Fade it out or remove it
-			if(fade){
-                e.fadeOut({endOpacity: 0, duration: fade_out_speed, callback :function() {
-                        e.setHeight(0, {duration: .3, callback: function() {
-                               Gritter._countRemoveWrapper(unique_id, e);
-                        }});
-                }});
+            // Fade it out or remove it
+            if(fade){
+                e.fadeOut({
+                    endOpacity: 0,
+                    duration: fade_out_speed,
+                    callback :function() {
+                        e.setHeight(0, {
+                            duration: .3,
+                            callback: function() {
+                                Gritter._countRemoveWrapper(unique_id, e);
+                            }
+                        });
+                    }
+                });
+            }
+            else {
 
-//				e.animate({
-//					endOpacity: 0
-//				, duration: fade_out_speed, callback: function(){
-//					e.scale(0, 0, {duration: 300, callback: function(){
-//						Gritter._countRemoveWrapper(unique_id, e);
-//					}})
-//				}})
+                this._countRemoveWrapper(unique_id, e);
 
-			}
-			else {
+            }
 
-				this._countRemoveWrapper(unique_id, e);
+        },
 
-			}
-
-		},
-
-		/**
-		* Perform actions based on the type of bind (mouseenter, mouseleave)
-		* @private
-		* @param {Object} e The jQuery element
-		* @param {String} type The type of action we're performing: mouseenter or mouseleave
-		*/
-		_hoverState: function(e, type){
-
-			// Change the border styles and add the (X) close button when you hover
-			if(type == 'mouseenter'){
-
-				e.addClass('hover');
-				var find_img = e.select('img');
-
-				// Insert the close button before what element
-				(find_img.length) ?
-					find_img.insertBefore(this._tpl_close) :
-					e.find('span').insertBefore(this._tpl_close);
-
-				// Clicking (X) makes the perdy thing close
-				e.select('.gritter-close').on('click', function(){
-					var unique_id = e.id.split('-')[2];
-					Gritter.removeSpecific(unique_id, {}, e, true);
-				});
-
-			}
-			// Remove the border styles and (X) close button when you mouse out
-			else {
-
-				e.removeClass('hover');
-				e.select('.gritter-close').remove();
-
-			}
-
-		},
-
-		/**
+        /**
 		* Remove a specific notification based on an ID
 		* @param {Integer} unique_id The ID used to delete a specific notification
 		* @param {Object} params A set of options passed in to determine how to get rid of it
 		* @param {Object} e The jQuery element that we're "fading" then removing
 		* @param {Boolean} unbind_events If we clicked on the (X) we set this to true to unbind mouseenter/mouseleave
 		*/
-		removeSpecific: function(unique_id, params, e, unbind_events){
+        removeSpecific: function(unique_id, params, e, unbind_events){
 
-			if(!e){
-				var e = Ext.get('gritter-item-' + unique_id);
-			}
+            if(!e){
+                var e = Ext.get('gritter-item-' + unique_id);
+            }
 
-			// We set the fourth param to let the _fade function know to
-			// unbind the "mouseleave" event.  Once you click (X) there's no going back!
-			this._fade(e, unique_id, params || {}, unbind_events);
+            // We set the fourth param to let the _fade function know to
+            // unbind the "mouseleave" event.  Once you click (X) there's no going back!
+            this._fade(e, unique_id, params || {}, unbind_events);
 
-		},
+        },
 
-		/**
+        /**
 		* If the item is fading out and we hover over it, restore it!
 		* @private
 		* @param {Object} e The HTML element to remove
 		* @param {Integer} unique_id The ID of the element
 		*/
-		_restoreItemIfFading: function(e, unique_id){
+        _restoreItemIfFading: function(e, unique_id){
 
-			clearTimeout(this['_int_id_' + unique_id]);
-			//e.stop().css({opacity: ''});
-            e.stopEvent();
+            clearTimeout(this['_int_id_' + unique_id]);
+            //e.stop().css({opacity: ''});
+            e.stopFx();
 
-		},
+        },
 
-		/**
+        /**
 		* Setup the global options - only once
 		* @private
 		*/
-		_runSetup: function(){
+        _runSetup: function(){
 
-			for(opt in Ext.gritter.options){
-				this[opt] = Ext.gritter.options[opt];
-			}
-			this._is_setup = 1;
+            for(opt in Ext.gritter.options){
+                this[opt] = Ext.gritter.options[opt];
+            }
+            this._is_setup = 1;
 
-		},
+        },
 
-		/**
+        /**
 		* Set the notification to fade out after a certain amount of time
 		* @private
 		* @param {Object} item The HTML element we're dealing with
 		* @param {Integer} unique_id The ID of the element
 		*/
-		_setFadeTimer: function(e, unique_id){
+        _setFadeTimer: function(e, unique_id){
 
-			var timer_str = (this._custom_timer) ? this._custom_timer : this.time;
-			this['_int_id_' + unique_id] = setTimeout(function(){
-				Gritter._fade(e, unique_id);
-			}, timer_str);
+            var timer_str = (this._custom_timer) ? this._custom_timer : this.time;
+            this['_int_id_' + unique_id] = setTimeout(function(){
+                Gritter._fade(e, unique_id);
+            }, timer_str);
 
-		},
+        },
 
-		/**
+        /**
 		* Bring everything to a halt
 		* @param {Object} params A list of callback functions to pass when all notifications are removed
 		*/
-		stop: function(params){
+        stop: function(params){
 
-			// callbacks (if passed)
-			var before_close = (Ext.isFunction(params.before_close)) ? params.before_close : function(){};
-			var after_close = (Ext.isFunction(params.after_close)) ? params.after_close : function(){};
+            // callbacks (if passed)
+            var before_close = (Ext.isFunction(params.before_close)) ? params.before_close : function(){};
+            var after_close = (Ext.isFunction(params.after_close)) ? params.after_close : function(){};
 
-			var wrap = Ext.get('gritter-notice-wrapper');
-			before_close(wrap);
-			wrap.fadeOut(function(){
-				Ext.fly(this).remove();
-				after_close();
-			});
+            var wrap = Ext.get('gritter-notice-wrapper');
+            before_close(wrap);
+            wrap.fadeOut(function(){
+                Ext.fly(this).remove();
+                after_close();
+            });
 
-		},
+        },
 
-		/**
+        /**
 		* An extremely handy PHP function ported to JS, works well for templating
 		* @private
 		* @param {String/Array} search A list of things to search for
 		* @param {String/Array} replace A list of things to replace the searches with
 		* @return {String} sa The output
 		*/
-		_str_replace: function(search, replace, subject, count){
+        _str_replace: function(search, replace, subject, count){
 
-			var i = 0, j = 0, temp = '', repl = '', sl = 0, fl = 0,
-				f = [].concat(search),
-				r = [].concat(replace),
-				s = subject,
-				ra = r instanceof Array, sa = s instanceof Array;
-			s = [].concat(s);
+            var i = 0, j = 0, temp = '', repl = '', sl = 0, fl = 0,
+            f = [].concat(search),
+            r = [].concat(replace),
+            s = subject,
+            ra = r instanceof Array, sa = s instanceof Array;
+            s = [].concat(s);
 
-			if(count){
-				this.window[count] = 0;
-			}
+            if(count){
+                this.window[count] = 0;
+            }
 
-			for(i = 0, sl = s.length; i < sl; i++){
+            for(i = 0, sl = s.length; i < sl; i++){
 
-				if(s[i] === ''){
-					continue;
-				}
+                if(s[i] === ''){
+                    continue;
+                }
 
-		        for (j = 0, fl = f.length; j < fl; j++){
+                for (j = 0, fl = f.length; j < fl; j++){
 
-					temp = s[i] + '';
-					repl = ra ? (r[j] !== undefined ? r[j] : '') : r[0];
-					s[i] = (temp).split(f[j]).join(repl);
+                    temp = s[i] + '';
+                    repl = ra ? (r[j] !== undefined ? r[j] : '') : r[0];
+                    s[i] = (temp).split(f[j]).join(repl);
 
-					if(count && s[i] !== temp){
-						this.window[count] += (temp.length-s[i].length) / f[j].length;
-					}
+                    if(count && s[i] !== temp){
+                        this.window[count] += (temp.length-s[i].length) / f[j].length;
+                    }
 
-				}
-			}
+                }
+            }
 
-			return sa ? s : s[0];
+            return sa ? s : s[0];
 
-		},
+        },
 
-		/**
+        /**
 		* A check to make sure we have something to wrap our notices with
 		* @private
 		*/
-		_verifyWrapper: function(){
+        _verifyWrapper: function(){
 
-			if(!Ext.fly('gritter-notice-wrapper')){
-				//Ext.select('body').append(this._tpl_wrap);
-                //Ext.select('body').appendChild(this._tpl_wrap);
-                //Ext.DomHelper.append(Ext.select('body'), {tag: 'div', id: 'gritter-notice-wrapper'});
-                Ext.DomHelper.append(document.body, {tag: 'div', id: 'gritter-notice-wrapper'});
-			}
+            if(!Ext.fly('gritter-notice-wrapper')){
+                //Ext.DomHelper.append(document.body, {tag: 'div', id: 'gritter-notice-wrapper'});
+                Ext.get(document.body).insertHtml('beforeEnd', this._tpl_wrap);
+            }
 
-		}
+        }
 
-	}
+    }
 
 })();
